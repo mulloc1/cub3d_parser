@@ -21,23 +21,45 @@ void	ft_put_picture(t_cub *cub, char *type, char *value)
 		cub->map.ea = value;
 }
 
+int	ft_valid_rgb(char *rgb)
+{
+	int	i;
+
+	i = -1;
+	while (rgb[++i])
+		if (rgb[i] < '0' || rgb[i] > '9')
+			return (0);
+	return (1);
+}
+
 void	ft_put_rgb(t_cub *cub, char *type, char *value)
 {
-	char	**value_split;
+	char	**rgbs;
 	int		rgb;
+	int		temp;
 
-	value_split = ft_split(value, ',');
-	ft_error(!value_split, "ft_put_rgb() value_split ft_split() failed\n");	
-	rgb = ft_atoi(value_split[0]) << 16;
-	rgb += ft_atoi(value_split[1]) << 8;
-	rgb += ft_atoi(value_split[2]);
-	if (ft_strncmp(type, "F", 2)) cub->map.floor = rgb;
+	rgbs = ft_split(value, ',');
+	ft_error(!rgbs, "ft_put_rgb() rgbs ft_split() failed\n");	
+	ft_error(!ft_valid_rgb(rgbs[0]), "invalid rgb value");
+	temp = ft_atoi(rgbs[0]);
+	ft_error(temp < 0 || temp > 255, "invalid rgb value");
+	rgb = temp << 16;
+	ft_error(!ft_valid_rgb(rgbs[1]), "invalid rgb value");
+	temp = ft_atoi(rgbs[1]);
+	ft_error(temp < 0 || temp > 255, "invalid rgb value");
+	rgb += temp << 8;
+	ft_error(!ft_valid_rgb(rgbs[2]), "invalid rgb value");
+	temp = ft_atoi(rgbs[2]);
+	ft_error(temp < 0 || temp > 255, "invalid rgb value");
+	rgb += temp;
+	if (ft_strncmp(type, "F", 2)) 
+		cub->map.floor = rgb;
 	else if (ft_strncmp(type, "C", 2))
 		cub->map.ceil = rgb;
-	free(value_split[0]);
-	free(value_split[1]);
-	free(value_split[2]);
-	free(value_split);
+	free(rgbs[0]);
+	free(rgbs[1]);
+	free(rgbs[2]);
+	free(rgbs);
 }
 
 int	ft_put_in(t_cub *cub, char **buf)
@@ -113,6 +135,29 @@ void	rebuilding_map(t_cub *cub)
 	}
 }
 
+void	ft_player_direction(t_cub *cub, char dir, t_vector v)
+{
+	if (cub->player.pos.x > 0 && cub->player.pos.y > 0)
+		ft_error(1, "invalid map multi player");
+	cub->player.pos.x = v.x;
+	cub->player.pos.y = v.y;
+	if (dir == 'N')
+		cub->player.dir = (t_vector) {0, 1};
+	else if (dir == 'S')
+		cub->player.dir = (t_vector) {0, -1};
+	else if (dir == 'E')
+		cub->player.dir = (t_vector) {1, 0};
+	else if (dir == 'W')
+		cub->player.dir = (t_vector) {-1, 0};
+}
+
+int	ft_isdir(char c)
+{
+	if (c == 'N' || c == 'S' || c == 'E' || c == 'W')
+		return (1);
+	return (0);
+}
+
 void	valid_checking(t_cub *cub)
 {
 	char	**map;
@@ -126,7 +171,7 @@ void	valid_checking(t_cub *cub)
 		j = -1;
 		while (map[i][++j])
 		{
-			if (map[i][j] == '0' || map[i][j] == 'N')
+			if (map[i][j] == '0' || ft_isdir(map[i][j]))
 			{
 				if (i + 1 < cub->map.height && map[i + 1][j] == ' ')
 					ft_error(1, "invalid map");
@@ -137,15 +182,20 @@ void	valid_checking(t_cub *cub)
 				if (j - 1 >= 0 && map[i][j - 1] == ' ')
 					ft_error(1, "invalid map");
 			}
-			if (map[i][j] == 'N')
-			{
-				if (cub->player.pos.x > 0 && cub->player.pos.y > 0)
-					ft_error(1, "invalid map multi player");
-				cub->player.pos.x = j;
-				cub->player.pos.y = i;
-			}	
+			if (ft_isdir(map[i][j]))
+				ft_player_direction(cub, map[i][j], (t_vector){j, i});
 		}
 	}
+}
+
+int	ft_valid_filename(char *file)
+{
+	unsigned int	len;
+
+	len = ft_strlen(file);
+	if (ft_strncmp(file + len - 4, ".cub", 5))
+		return (0);
+	return (1);
 }
 
 int	ft_parsing(t_cub *cub, char *file)
@@ -153,6 +203,7 @@ int	ft_parsing(t_cub *cub, char *file)
 	char	*buf;
 	int		fd;
 
+	ft_error(!ft_valid_filename(file), "invalid file extension");
 	fd = open(file, O_RDONLY);
 	ft_error(fd == -1, "parser() fd open() failed");
 	while (1)
@@ -183,5 +234,6 @@ int	main(int argc, char *argv[])
 	for (int i = 0; i < cub->map.height; i++)
 		printf("%s %zu\n", cub->map.map[i], ft_strlen(cub->map.map[i]));
 	printf("%f %f\n", cub->player.pos.x, cub->player.pos.y);
+	printf("%f %f\n", cub->player.dir.x, cub->player.dir.y);
 	return (0);
 }
