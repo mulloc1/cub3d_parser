@@ -9,6 +9,16 @@ void	ft_error(int cmp, char *message)
 	}		
 }
 
+void	ft_str_array_free(char **arr)
+{
+	int	i;
+
+	i = -1;
+	while (arr[++i])
+		free(arr[i]);
+	free(arr);
+}
+
 void	ft_put_picture(t_cub *cub, char *type, char *value)
 {
 	if (!ft_strncmp(type, "NO", 3))
@@ -56,10 +66,7 @@ void	ft_put_rgb(t_cub *cub, char *type, char *value)
 		cub->map.floor = rgb;
 	else if (ft_strncmp(type, "C", 2))
 		cub->map.ceil = rgb;
-	free(rgbs[0]);
-	free(rgbs[1]);
-	free(rgbs[2]);
-	free(rgbs);
+	ft_str_array_free(rgbs);
 }
 
 int	ft_put_in(t_cub *cub, char **buf)
@@ -68,16 +75,14 @@ int	ft_put_in(t_cub *cub, char **buf)
 				|| !ft_strncmp(buf[0], "WE", 3) || !ft_strncmp(buf[0], "EA", 3))
 	{
 		ft_put_picture(cub, buf[0], buf[1]);
-		free(buf[0]);
-		free(buf);
+		buf[1] = NULL;
+		ft_str_array_free(buf);
 		return (1);
 	}
 	else if (!ft_strncmp(buf[0], "F", 2) || !ft_strncmp(buf[0], "C", 2))
 	{
 		ft_put_rgb(cub, buf[0], buf[1]);
-		free(buf[0]);
-		free(buf[1]);
-		free(buf);
+		ft_str_array_free(buf);
 		return (1);
 	}
 	return (0);
@@ -86,16 +91,12 @@ int	ft_put_in(t_cub *cub, char **buf)
 int	ft_type_parsing(t_cub *cub, char *buf)
 {
 	char	**buf_split;
-	int		i;
 
 	buf_split = ft_split(buf, ' ');
 	ft_error(!buf_split, "ft_type_parsing() buf_split ft_split() failed\n");
 	if (!ft_put_in(cub, buf_split))
 	{
-		i = -1;
-		while (buf_split[++i])
-			free(buf_split[i]);
-		free(buf_split);
+		ft_str_array_free(buf_split);
 		return (0);
 	}
 	return (1);
