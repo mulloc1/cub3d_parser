@@ -159,6 +159,13 @@ int	ft_isdir(char c)
 	return (0);
 }
 
+int	ft_valid_c(char c)
+{
+	if (c == '1' || c == '0' || c == ' ' || c == 'S' || c == 'N' || c == 'E' || c == 'W')
+		return (1);
+	return (0);
+}
+
 void	valid_checking(t_cub *cub)
 {
 	char	**map;
@@ -172,6 +179,7 @@ void	valid_checking(t_cub *cub)
 		j = -1;
 		while (map[i][++j])
 		{
+			ft_error(!ft_valid_c(map[i][j]), "invalid map");
 			if (map[i][j] == '0' || ft_isdir(map[i][j]))
 			{
 				if (i + 1 < cub->map.height && map[i + 1][j] == ' ')
